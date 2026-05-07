@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+fill-diplomas/data.fdf
+fill-diplomas/output
