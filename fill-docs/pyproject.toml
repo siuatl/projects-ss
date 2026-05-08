@@ -9,3 +9,8 @@ dependencies = [
     "pypdf>=6.10.2",
     "six>=1.17.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.20.0",
+]
