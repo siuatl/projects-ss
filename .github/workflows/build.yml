@@ -36,5 +36,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Windows-EXE
-          path: dist/fill-docs.exe
+          path: fill-docs/dist/fill-docs.exe
           retention-days: 5
