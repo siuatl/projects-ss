@@ -15,7 +15,7 @@ a = Analysis(
     ["fill-docs.py"],
     pathex=["./fill-docs.py"],
     binaries=binaries_pypdf,
-    datas=datas_pypdf + [("images", "images")],
+    datas=datas_pypdf,
     hiddenimports=["pypdf", "gooey"],
     hookspath=[],
     runtime_hooks=[],
