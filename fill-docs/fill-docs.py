@@ -12,15 +12,7 @@ import subprocess
 import csv
 import argparse
 import os
-import time
-
-# @Gooey(
-#     show_restart_button=False,
-#     disable_stop_button=True,
-#     progress_indicator_type="progressbar",
-#     progress_regex=r"Processing document (\d+)/(\d+)",
-#     progress_expr="x[0] / x[1] * 100",
-# )
+import sys
 
 
 @Gooey
@@ -73,7 +65,6 @@ def main():
         for row in reader_csv:
             reader = PdfReader(args.input_pdf)
             fields = reader.get_fields()
-            time.sleep(0.3)
             writer = PdfWriter()
             writer.append(reader)
 
@@ -107,4 +98,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
