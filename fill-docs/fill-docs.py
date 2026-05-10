@@ -67,9 +67,12 @@ def main():
         output_path = output_path.resolve()
         print(f"\t-Writing documents to : {output_path}")
         print("\n")
+        reader.close()
 
         count = 1
         for row in reader_csv:
+            reader = PdfReader(args.input_pdf)
+            fields = reader.get_fields()
             time.sleep(0.3)
             writer = PdfWriter()
             writer.append(reader)
@@ -97,6 +100,8 @@ def main():
 
             with open(full_path, "wb") as f:
                 writer.write(f)
+                writer.close()
+            reader.close()
 
     print("\n**Finished writing all documents.**")
 
