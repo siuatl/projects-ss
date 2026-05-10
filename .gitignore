@@ -30,7 +30,7 @@ MANIFEST
 #   Usually these files are written by a python script from a template
 #   before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+#*.spec
 
 # Installer logs
 pip-log.txt
@@ -218,5 +218,5 @@ __marimo__/
 .streamlit/secrets.toml
 
 
-fill-diplomas/data.fdf
-fill-diplomas/output
+fill-docs/data.fdf
+fill-docs/output
