@@ -1,6 +1,12 @@
 #! /usr/bin/env python3
 
+# Run command:
+# uv run ./fill-docs.py --ignore-gooey ./template.pdf ./input.csv
+
 from gooey import Gooey, GooeyParser
+from pypdf import PdfReader, PdfWriter
+from pypdf.generic import NameObject, NumberObject
+from pathlib import Path
 import pypdf
 import subprocess
 import csv
@@ -8,7 +14,13 @@ import argparse
 import os
 
 
-@Gooey
+@Gooey(
+    show_restart_button=False,
+    disable_stop_button=True,
+    progress_indicator_type="progressbar",
+    progress_regex=r"Processing document (\d+)/(\d+)",
+    progress_expr="x[0] / x[1] * 100",
+)
 def main():
     parser = GooeyParser(description="Program to fill pdf fields from a csv file.")
 
@@ -25,7 +37,7 @@ def main():
     )
     group.add_argument(
         "--file-name-column",
-        metavar="Column to use for file name:",
+        metavar="Column index to use for output file name:",
         type=int,
         default=0,
         widget="IntegerField",
@@ -33,46 +45,56 @@ def main():
 
     args = parser.parse_args()
 
-    with open("input.csv", mode="r", encoding="utf-8") as csv_file:
-        reader = csv.reader(csv_file)
+    with open(args.input_csv, mode="r", encoding="utf-8") as csv_file:
+        reader_csv = csv.reader(csv_file)
 
-        # ignore header
-        next(reader)
+        header = next(reader_csv)
 
-        for row in reader:
-            name = row[0]
-            program = row[1]
-            date = row[2]
+        reader = PdfReader(args.input_pdf)
+        fields = reader.get_fields()
 
-            data_str = f"""%FDF-1.2
-1 0 obj
-<<
-/FDF << /Fields [
-<< /T (Nombre alumno) /V ({name}) >>
-<< /T (Programa de estudios) /V ({program}) >>
-<< /T (Fecha) /V (and the seal of the university are affixed here. Given at Florida, U.S.A. on Month {date}.) >>
-] >>
->>
-endobj
-trailer
-<< /Root 1 0 R >>
-%%EOF
-"""
+        print("**Starting to fill PDF files.**")
+        print(f"\t-CSV field names: {header}")
+        print(f"\t-PDF field names: {list(fields.keys())}")
+        output_path = Path(".") / "output"
+        output_path = output_path.resolve()
+        print(f"\t-Writing documents to : {output_path}")
+        print("\n")
 
-            data_str = data_str.replace("á", "\\341")
-            data_str = data_str.replace("é", "\\351")
-            data_str = data_str.replace("í", "\\355")
-            data_str = data_str.replace("ó", "\\363")
-            data_str = data_str.replace("ú", "\\372")
-            data_str = data_str.replace("ñ", "\\361")
-            file = open("data.fdf", "w", encoding="utf-8")
-            file.write(data_str)
-            file.close()
+        with open(args.input_csv, mode="r", encoding="utf-8") as csv_file_count:
+            reader_count = csv.reader(csv_file_count)
+            total = sum(1 for row in reader_count) - 1
+        count = 1
+        for row in reader_csv:
+            writer = PdfWriter()
+            writer.append(reader)
 
-            subprocess.run(
-                f'pdftk template.pdf fill_form data.fdf output "./output/{name}.pdf" flatten',
-                shell=True,
+            data_to_fill = dict()
+            print(
+                f"Processing document {count}/{total} ('{row[args.file_name_column]}.pdf')",
+                flush=True,
             )
+            count += 1
+
+            for (field_name, info), fill_text in zip(fields.items(), row):
+                data_to_fill[field_name] = fill_text
+
+            for page in writer.pages:
+                writer.update_page_form_field_values(page, data_to_fill)
+
+                if "/Annots" in page:
+                    for annot in page["/Annots"]:
+                        obj = annot.get_object()
+                        if "/T" in obj:
+                            obj.update({NameObject("/Ff"): NumberObject(1)})
+
+            full_path = Path(".") / "output" / f"{row[args.file_name_column]}.pdf"
+            full_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(full_path, "wb") as f:
+                writer.write(f)
+
+    print("\n**Finished writing all documents.**")
 
 
 if __name__ == "__main__":
