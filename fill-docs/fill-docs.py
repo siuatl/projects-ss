@@ -12,16 +12,18 @@ import subprocess
 import csv
 import argparse
 import os
-import sys
+import time
+
+# @Gooey(
+#     show_restart_button=False,
+#     disable_stop_button=True,
+#     progress_indicator_type="progressbar",
+#     progress_regex=r"Processing document (\d+)/(\d+)",
+#     progress_expr="x[0] / x[1] * 100",
+# )
 
 
-@Gooey(
-    show_restart_button=False,
-    disable_stop_button=True,
-    progress_indicator_type="progressbar",
-    progress_regex=r"Processing document (\d+)/(\d+)",
-    progress_expr="x[0] / x[1] * 100",
-)
+@Gooey
 def main():
     parser = GooeyParser(description="Program to fill pdf fields from a csv file.")
 
@@ -54,27 +56,26 @@ def main():
         reader = PdfReader(args.input_pdf)
         fields = reader.get_fields()
 
-        print("**Starting to fill PDF files.**", file=sys.stderr, flush=True)
-        print(f"\t-CSV field names: {header}", file=sys.stderr, flush=True)
-        print(f"\t-PDF field names: {list(fields.keys())}", file=sys.stderr, flush=True)
+        print("**Starting to fill PDF files.**")
+        print(f"\t-CSV field names: {header}")
+        print(f"\t-PDF field names: {list(fields.keys())}")
         output_path = Path(".") / "output"
         output_path = output_path.resolve()
-        print(f"\t-Writing documents to : {output_path}", file=sys.stderr, flush=True)
-        print("\n", file=sys.stderr, flush=True)
+        print(f"\t-Writing documents to : {output_path}")
+        print("\n")
 
         with open(args.input_csv, mode="r", encoding="utf-8") as csv_file_count:
             reader_count = csv.reader(csv_file_count)
             total = sum(1 for row in reader_count) - 1
         count = 1
         for row in reader_csv:
+            time.sleep(0.3)
             writer = PdfWriter()
             writer.append(reader)
 
             data_to_fill = dict()
             print(
-                f"Processing document {count}/{total} ('{row[args.file_name_column]}.pdf')",
-                file=sys.stderr,
-                flush=True,
+                f"Processing document {count}/{total} ('{row[args.file_name_column]}.pdf')"
             )
             count += 1
 
@@ -96,7 +97,7 @@ def main():
             with open(full_path, "wb") as f:
                 writer.write(f)
 
-    print("\n**Finished writing all documents.**", file=sys.stderr, flush=True)
+    print("\n**Finished writing all documents.**")
 
 
 if __name__ == "__main__":
