@@ -12,6 +12,7 @@ import subprocess
 import csv
 import argparse
 import os
+import sys
 
 
 @Gooey(
@@ -53,13 +54,13 @@ def main():
         reader = PdfReader(args.input_pdf)
         fields = reader.get_fields()
 
-        print("**Starting to fill PDF files.**")
-        print(f"\t-CSV field names: {header}")
-        print(f"\t-PDF field names: {list(fields.keys())}")
+        print("**Starting to fill PDF files.**", file=sys.stderr, flush=True)
+        print(f"\t-CSV field names: {header}", file=sys.stderr, flush=True)
+        print(f"\t-PDF field names: {list(fields.keys())}", file=sys.stderr, flush=True)
         output_path = Path(".") / "output"
         output_path = output_path.resolve()
-        print(f"\t-Writing documents to : {output_path}")
-        print("\n")
+        print(f"\t-Writing documents to : {output_path}", file=sys.stderr, flush=True)
+        print("\n", file=sys.stderr, flush=True)
 
         with open(args.input_csv, mode="r", encoding="utf-8") as csv_file_count:
             reader_count = csv.reader(csv_file_count)
@@ -72,6 +73,7 @@ def main():
             data_to_fill = dict()
             print(
                 f"Processing document {count}/{total} ('{row[args.file_name_column]}.pdf')",
+                file=sys.stderr,
                 flush=True,
             )
             count += 1
@@ -94,7 +96,7 @@ def main():
             with open(full_path, "wb") as f:
                 writer.write(f)
 
-    print("\n**Finished writing all documents.**")
+    print("\n**Finished writing all documents.**", file=sys.stderr, flush=True)
 
 
 if __name__ == "__main__":
