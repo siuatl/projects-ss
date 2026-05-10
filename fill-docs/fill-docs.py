@@ -3,6 +3,14 @@
 # Run command:
 # uv run ./fill-docs.py --ignore-gooey ./template.pdf ./input.csv
 
+import sys
+import io
+
+# Force UTF-8 for standard streams
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+
 from gooey import Gooey, GooeyParser
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import NameObject, NumberObject
@@ -13,7 +21,6 @@ import csv
 import argparse
 import psutil
 import os
-import sys
 import ctypes
 
 
@@ -103,4 +110,6 @@ def main():
 
 
 if __name__ == "__main__":
+    if os.name == "nt":
+        subprocess.run("chcp 65001", shell=True, capture_output=True)
     sys.exit(main())
