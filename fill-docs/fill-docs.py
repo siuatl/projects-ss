@@ -11,8 +11,10 @@ import pypdf
 import subprocess
 import csv
 import argparse
+import psutil
 import os
 import sys
+import ctypes
 
 
 @Gooey
@@ -97,8 +99,7 @@ def main():
     print("\n**Finished writing all documents.**")
     sys.stdout.flush()
     if os.name == "nt":
-        # WINDOWS: Force kill the process tree
-        os.system(f"taskkill /F /T /PID {os.getpid()}")
+        ctypes.windll.kernel32.ExitProcess(0)
 
 
 if __name__ == "__main__":
