@@ -95,6 +95,10 @@ def main():
             reader.close()
 
     print("\n**Finished writing all documents.**")
+    sys.stdout.flush()
+    if os.name == "nt":
+        # WINDOWS: Force kill the process tree
+        os.system(f"taskkill /F /T /PID {os.getpid()}")
 
 
 if __name__ == "__main__":
