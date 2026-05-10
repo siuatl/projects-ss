@@ -48,6 +48,10 @@ def main():
 
     args = parser.parse_args()
 
+    with open(args.input_csv, mode="r", encoding="utf-8") as csv_file_count:
+        reader_count = csv.reader(csv_file_count)
+        total = sum(1 for row in reader_count) - 1
+
     with open(args.input_csv, mode="r", encoding="utf-8") as csv_file:
         reader_csv = csv.reader(csv_file)
 
@@ -64,9 +68,6 @@ def main():
         print(f"\t-Writing documents to : {output_path}")
         print("\n")
 
-        with open(args.input_csv, mode="r", encoding="utf-8") as csv_file_count:
-            reader_count = csv.reader(csv_file_count)
-            total = sum(1 for row in reader_count) - 1
         count = 1
         for row in reader_csv:
             time.sleep(0.3)
