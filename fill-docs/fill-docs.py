@@ -6,10 +6,10 @@
 import sys
 import io
 
-# Force UTF-8 for standard streams
-if sys.platform == "win32":
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+# # Force UTF-8 for standard streams
+# if sys.platform == "win32":
+#     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+#     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 from gooey import Gooey, GooeyParser
 from pypdf import PdfReader, PdfWriter
