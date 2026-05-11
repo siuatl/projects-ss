@@ -5,29 +5,6 @@
 
 
 import sys
-import os
-import ctypes
-
-
-def hide_console():
-    # Only execute Windows-specific code if we are on Windows
-    if os.name == "nt":
-        try:
-            kernel32 = ctypes.WinDLL("kernel32")
-            user32 = ctypes.WinDLL("user32")
-            hWnd = kernel32.GetConsoleWindow()
-            if hWnd:
-                # SW_HIDE = 0
-                user32.ShowWindow(hWnd, 0)
-        except Exception:
-            pass  # Silently fail if something goes wrong with the Windows API
-
-
-# Only hide it if the user ISN'T using the terminal mode
-if "--ignore-gooey" not in sys.argv:
-    hide_console()
-
-import sys
 import io
 
 # Force UTF-8 for standard streams
