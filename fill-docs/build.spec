@@ -40,6 +40,6 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     icon=os.path.join(gooey_root, "images", "program_icon.ico"),
 )

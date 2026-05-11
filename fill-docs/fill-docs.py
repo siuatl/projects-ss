@@ -5,45 +5,25 @@
 
 
 import sys
-import os
-import ctypes
-
-
-def hide_console():
-    # Only execute Windows-specific code if we are on Windows
-    if os.name == "nt":
-        try:
-            kernel32 = ctypes.WinDLL("kernel32")
-            user32 = ctypes.WinDLL("user32")
-            hWnd = kernel32.GetConsoleWindow()
-            if hWnd:
-                # SW_HIDE = 0
-                user32.ShowWindow(hWnd, 0)
-        except Exception:
-            pass  # Silently fail if something goes wrong with the Windows API
-
-
-# Only hide it if the user ISN'T using the terminal mode
-if "--ignore-gooey" not in sys.argv:
-    hide_console()
-
-import sys
 import io
-
-# Force UTF-8 for standard streams
-if sys.platform == "win32":
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 from gooey import Gooey, GooeyParser
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import NameObject, NumberObject
 from pathlib import Path
 import pypdf
-import subprocess
+import unicodedata
 import csv
 import argparse
 import os
+
+
+def to_ansi_compatible(text):
+    # Normalize 'é' to 'e' + '´' and then encode to ascii
+    # 'NFKD' breaks characters into their base components
+    normalized = unicodedata.normalize("NFKD", text)
+    # Encode to ascii and ignore the leftover accent marks
+    return normalized.encode("ascii", "ignore").decode("ascii")
 
 
 @Gooey(
@@ -90,11 +70,15 @@ def main():
         fields = reader.get_fields()
 
         print("**Starting to fill PDF files.**", flush=True)
-        print(f"\t-CSV field names: {header}", flush=True)
-        print(f"\t-PDF field names: {list(fields.keys())}", flush=True)
+        print(to_ansi_compatible(f"\t-CSV field names: {header}"), flush=True)
+        print(
+            to_ansi_compatible(f"\t-PDF field names: {list(fields.keys())}"), flush=True
+        )
         output_path = Path(".") / "output"
         output_path = output_path.resolve()
-        print(f"\t-Writing documents to : {output_path}", flush=True)
+        print(
+            to_ansi_compatible(f"\t-Writing documents to : {output_path}"), flush=True
+        )
         print("\n", flush=True)
         reader.close()
 
@@ -108,7 +92,9 @@ def main():
 
             data_to_fill = dict()
             print(
-                f"Processing document {count}/{total} ('{row[args.file_name_column]}.pdf')",
+                to_ansi_compatible(
+                    f"Processing document {count}/{total} ('{row[args.file_name_column]}.pdf')"
+                ),
                 flush=True,
             )
             count += 1
@@ -141,6 +127,4 @@ def main():
 
 
 if __name__ == "__main__":
-    if os.name == "nt":
-        subprocess.run("chcp 65001", shell=True, capture_output=True)
     sys.exit(main())
