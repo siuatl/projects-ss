@@ -19,12 +19,16 @@ import pypdf
 import subprocess
 import csv
 import argparse
-import psutil
 import os
-import ctypes
 
 
-@Gooey
+@Gooey(
+    show_restart_button=False,
+    disable_stop_button=True,
+    progress_indicator_type="progressbar",
+    progress_regex=r"Processing document (\d+)/(\d+)",
+    progress_expr="x[0] / x[1] * 100",
+)
 def main():
     parser = GooeyParser(description="Program to fill pdf fields from a csv file.")
 
@@ -61,13 +65,13 @@ def main():
         reader = PdfReader(args.input_pdf)
         fields = reader.get_fields()
 
-        print("**Starting to fill PDF files.**")
-        print(f"\t-CSV field names: {header}")
-        print(f"\t-PDF field names: {list(fields.keys())}")
+        print("**Starting to fill PDF files.**", flush=True)
+        print(f"\t-CSV field names: {header}", flush=True)
+        print(f"\t-PDF field names: {list(fields.keys())}", flush=True)
         output_path = Path(".") / "output"
         output_path = output_path.resolve()
-        print(f"\t-Writing documents to : {output_path}")
-        print("\n")
+        print(f"\t-Writing documents to : {output_path}", flush=True)
+        print("\n", flush=True)
         reader.close()
 
         count = 1
@@ -76,10 +80,12 @@ def main():
             fields = reader.get_fields()
             writer = PdfWriter()
             writer.append(reader)
+            writer.set_need_appearances_writer()
 
             data_to_fill = dict()
             print(
-                f"Processing document {count}/{total} ('{row[args.file_name_column]}.pdf')"
+                f"Processing document {count}/{total} ('{row[args.file_name_column]}.pdf')",
+                flush=True,
             )
             count += 1
 
@@ -87,7 +93,7 @@ def main():
                 data_to_fill[field_name] = fill_text
 
             for page in writer.pages:
-                writer.update_page_form_field_values(page, data_to_fill)
+                writer.update_page_form_field_values(page, data_to_fill, flags=1)
 
                 if "/Annots" in page:
                     for annot in page["/Annots"]:
@@ -98,15 +104,16 @@ def main():
             full_path = Path(".") / "output" / f"{row[args.file_name_column]}.pdf"
             full_path.parent.mkdir(parents=True, exist_ok=True)
 
+            if "/AcroForm" in writer.root_object:
+                del writer.root_object["/AcroForm"]
+
             with open(full_path, "wb") as f:
                 writer.write(f)
                 writer.close()
+
             reader.close()
 
-    print("\n**Finished writing all documents.**")
-    sys.stdout.flush()
-    if os.name == "nt":
-        ctypes.windll.kernel32.ExitProcess(0)
+    print("\n**Finished writing all documents.**", flush=True)
 
 
 if __name__ == "__main__":
