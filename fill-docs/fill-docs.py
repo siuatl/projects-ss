@@ -5,7 +5,6 @@
 
 
 import sys
-import io
 
 from gooey import Gooey, GooeyParser
 from pypdf import PdfReader, PdfWriter
@@ -16,6 +15,8 @@ import unicodedata
 import csv
 import argparse
 import os
+import io
+import openpyxl
 
 
 def to_ansi_compatible(text):
@@ -43,8 +44,8 @@ def main():
         widget="FileChooser",
     )
     group.add_argument(
-        "input_csv",
-        metavar="Input CSV file path:",
+        "input_xlsx",
+        metavar="Input Excel(.XLSX) file path:",
         widget="FileChooser",
     )
     group.add_argument(
@@ -57,71 +58,78 @@ def main():
 
     args = parser.parse_args()
 
-    with open(args.input_csv, mode="r", encoding="utf-8") as csv_file_count:
-        reader_count = csv.reader(csv_file_count)
-        total = sum(1 for row in reader_count) - 1
+    wb = openpyxl.load_workbook(args.input_xlsx, data_only=True)
+    sheet = wb.active
 
-    with open(args.input_csv, mode="r", encoding="utf-8") as csv_file:
-        reader_csv = csv.reader(csv_file)
+    csv_file = io.StringIO()
+    csv_writer = csv.writer(csv_file, delimiter=",")
+    csv_writer.writerows(sheet.iter_rows(values_only=True))
 
-        header = next(reader_csv)
+    wb.close()
 
+    csv_file.seek(0)
+
+    reader_count = csv.reader(csv_file)
+    total = sum(1 for row in reader_count) - 1
+
+    csv_file.seek(0)
+
+    reader_csv = csv.reader(csv_file)
+    header = next(reader_csv)
+
+    reader = PdfReader(args.input_pdf)
+    fields = reader.get_fields()
+
+    print("**Starting to fill PDF files.**", flush=True)
+    print(to_ansi_compatible(f"\t-CSV field names: {header}"), flush=True)
+    print(to_ansi_compatible(f"\t-PDF field names: {list(fields.keys())}"), flush=True)
+    output_path = Path(".") / "output"
+    output_path = output_path.resolve()
+    print(to_ansi_compatible(f"\t-Writing documents to : {output_path}"), flush=True)
+    print("\n", flush=True)
+    reader.close()
+
+    count = 1
+    for row in reader_csv:
         reader = PdfReader(args.input_pdf)
         fields = reader.get_fields()
+        writer = PdfWriter()
+        writer.append(reader)
+        writer.set_need_appearances_writer()
 
-        print("**Starting to fill PDF files.**", flush=True)
-        print(to_ansi_compatible(f"\t-CSV field names: {header}"), flush=True)
+        data_to_fill = dict()
         print(
-            to_ansi_compatible(f"\t-PDF field names: {list(fields.keys())}"), flush=True
+            to_ansi_compatible(
+                f"Processing document {count}/{total} ('{row[args.file_name_column]}.pdf')"
+            ),
+            flush=True,
         )
-        output_path = Path(".") / "output"
-        output_path = output_path.resolve()
-        print(
-            to_ansi_compatible(f"\t-Writing documents to : {output_path}"), flush=True
-        )
-        print("\n", flush=True)
+        count += 1
+
+        for (field_name, info), fill_text in zip(fields.items(), row):
+            data_to_fill[field_name] = fill_text
+
+        for page in writer.pages:
+            writer.update_page_form_field_values(page, data_to_fill, flags=1)
+
+            if "/Annots" in page:
+                for annot in page["/Annots"]:
+                    obj = annot.get_object()
+                    if "/T" in obj:
+                        obj.update({NameObject("/Ff"): NumberObject(1)})
+
+        full_path = Path(".") / "output" / f"{row[args.file_name_column]}.pdf"
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if "/AcroForm" in writer.root_object:
+            del writer.root_object["/AcroForm"]
+
+        with open(full_path, "wb") as f:
+            writer.write(f)
+            writer.close()
+
         reader.close()
-
-        count = 1
-        for row in reader_csv:
-            reader = PdfReader(args.input_pdf)
-            fields = reader.get_fields()
-            writer = PdfWriter()
-            writer.append(reader)
-            writer.set_need_appearances_writer()
-
-            data_to_fill = dict()
-            print(
-                to_ansi_compatible(
-                    f"Processing document {count}/{total} ('{row[args.file_name_column]}.pdf')"
-                ),
-                flush=True,
-            )
-            count += 1
-
-            for (field_name, info), fill_text in zip(fields.items(), row):
-                data_to_fill[field_name] = fill_text
-
-            for page in writer.pages:
-                writer.update_page_form_field_values(page, data_to_fill, flags=1)
-
-                if "/Annots" in page:
-                    for annot in page["/Annots"]:
-                        obj = annot.get_object()
-                        if "/T" in obj:
-                            obj.update({NameObject("/Ff"): NumberObject(1)})
-
-            full_path = Path(".") / "output" / f"{row[args.file_name_column]}.pdf"
-            full_path.parent.mkdir(parents=True, exist_ok=True)
-
-            if "/AcroForm" in writer.root_object:
-                del writer.root_object["/AcroForm"]
-
-            with open(full_path, "wb") as f:
-                writer.write(f)
-                writer.close()
-
-            reader.close()
+    csv_file.close()
 
     print("\n**Finished writing all documents.**", flush=True)
 

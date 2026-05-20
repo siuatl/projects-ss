@@ -1,9 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
+import os
 from PyInstaller.utils.hooks import collect_all
 
 datas_pypdf, binaries_pypdf, hiddenimports_pypdf = collect_all("pypdf")
+datas_openpyxl, binaries_openpyxl, hiddenimports_openpyxl = collect_all("openpyxl")
 
 import gooey
 
@@ -14,9 +15,9 @@ block_cipher = None
 a = Analysis(
     ["fill-docs.py"],
     pathex=["./fill-docs.py"],
-    binaries=binaries_pypdf,
-    datas=datas_pypdf,
-    hiddenimports=["pypdf", "gooey"],
+    binaries=binaries_pypdf + binaries_openpyxl,
+    datas=datas_pypdf + datas_openpyxl,
+    hiddenimports=["pypdf", "gooey"] + hiddenimports_openpyxl,
     hookspath=[],
     runtime_hooks=[],
     excludes=[],
