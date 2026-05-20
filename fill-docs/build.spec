@@ -6,6 +6,9 @@ from PyInstaller.utils.hooks import collect_all
 datas_pypdf, binaries_pypdf, hiddenimports_pypdf = collect_all("pypdf")
 datas_openpyxl, binaries_openpyxl, hiddenimports_openpyxl = collect_all("openpyxl")
 
+# pymupdf
+datas_pymupdf, binaries_pymupdf, hiddenimports_pymupdf = collect_all("pymupdf")
+
 import gooey
 
 gooey_root = os.path.dirname(gooey.__file__)
@@ -15,9 +18,11 @@ block_cipher = None
 a = Analysis(
     ["fill-docs.py"],
     pathex=["./fill-docs.py"],
-    binaries=binaries_pypdf + binaries_openpyxl,
-    datas=datas_pypdf + datas_openpyxl,
-    hiddenimports=["pypdf", "gooey"] + hiddenimports_openpyxl,
+    binaries=binaries_pypdf + binaries_openpyxl + binaries_pymupdf,
+    datas=datas_pypdf + datas_openpyxl + datas_pymupdf,
+    hiddenimports=["pypdf", "gooey", "pymupdf", "fitz"]
+    + hiddenimports_openpyxl
+    + hiddenimports_pymupdf,
     hookspath=[],
     runtime_hooks=[],
     excludes=[],

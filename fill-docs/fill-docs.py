@@ -17,6 +17,7 @@ import argparse
 import os
 import io
 import openpyxl
+import pymupdf
 
 
 def to_ansi_compatible(text):
@@ -25,6 +26,19 @@ def to_ansi_compatible(text):
     normalized = unicodedata.normalize("NFKD", text)
     # Encode to ascii and ignore the leftover accent marks
     return normalized.encode("ascii", "ignore").decode("ascii")
+
+
+def flatten_and_save_fields(input_pdf):
+    doc = pymupdf.open(input_pdf)
+
+    for page in doc:
+        # This converts interactive fields (widgets) directly into raw text elements
+        # completely flattens annotations and form fields into page paths/text
+        page.clean_contents()
+
+    doc.bake()  # flatten PDF
+    doc.saveIncr()  # Save cahges to file
+    doc.close()
 
 
 @Gooey(
@@ -121,12 +135,10 @@ def main():
         full_path = Path(".") / "output" / f"{row[args.file_name_column]}.pdf"
         full_path.parent.mkdir(parents=True, exist_ok=True)
 
-        if "/AcroForm" in writer.root_object:
-            del writer.root_object["/AcroForm"]
-
         with open(full_path, "wb") as f:
             writer.write(f)
             writer.close()
+        flatten_and_save_fields(full_path)
 
         reader.close()
     csv_file.close()
