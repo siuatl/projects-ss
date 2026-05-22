@@ -1,7 +1,7 @@
 [project]
-name = "fill-docs"
+name = "fill-diploma-usa"
 version = "0.0.1"
-description = "Program to fill pdf fields from an Excel file."
+description = "Program to fill the USA diplomas from an Excel file."
 requires-python = ">=3.12"
 readme = "README.md"
 dependencies = [

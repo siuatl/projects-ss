@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 # Run command:
-# uv run ./fill-docs.py --ignore-gooey ./template.pdf ./input.csv
+# uv run ./fill-diploma-usa.py --ignore-gooey ~/input.xlsx
 
 
 import sys
@@ -18,6 +18,8 @@ import os
 import io
 import openpyxl
 import pymupdf
+import template_pdf_base64
+import base64
 
 
 def to_ansi_compatible(text):
@@ -49,25 +51,16 @@ def flatten_and_save_fields(input_pdf):
     progress_expr="x[0] / x[1] * 100",
 )
 def main():
-    parser = GooeyParser(description="Program to fill pdf fields from an Excel file.")
+    parser = GooeyParser(
+        description="Program to fill the USA diplomas from an Excel file."
+    )
 
     group = parser.add_argument_group("Input Files")
-    group.add_argument(
-        "input_pdf",
-        metavar="Input PDF file path:",
-        widget="FileChooser",
-    )
+
     group.add_argument(
         "input_xlsx",
         metavar="Input Excel(.XLSX) file path:",
         widget="FileChooser",
-    )
-    group.add_argument(
-        "--file-name-column",
-        metavar="Column index to use for output file name:",
-        type=int,
-        default=0,
-        widget="IntegerField",
     )
 
     args = parser.parse_args()
@@ -91,7 +84,8 @@ def main():
     reader_csv = csv.reader(csv_file)
     header = next(reader_csv)
 
-    reader = PdfReader(args.input_pdf)
+    input_pdf = io.BytesIO(base64.b64decode(template_pdf_base64.template_pdf_base64))
+    reader = PdfReader(input_pdf)
     fields = reader.get_fields()
 
     print("**Starting to fill PDF files.**", flush=True)
@@ -102,10 +96,11 @@ def main():
     print(to_ansi_compatible(f"\t-Writing documents to : {output_path}"), flush=True)
     print("\n", flush=True)
     reader.close()
+    input_pdf.seek(0)
 
     count = 1
     for row in reader_csv:
-        reader = PdfReader(args.input_pdf)
+        reader = PdfReader(input_pdf)
         fields = reader.get_fields()
         writer = PdfWriter()
         writer.append(reader)
@@ -113,15 +108,19 @@ def main():
 
         data_to_fill = dict()
         print(
-            to_ansi_compatible(
-                f"Processing document {count}/{total} ('{row[args.file_name_column]}.pdf')"
-            ),
+            to_ansi_compatible(f"Processing document {count}/{total} ('{row[0]}.pdf')"),
             flush=True,
         )
         count += 1
 
         for (field_name, info), fill_text in zip(fields.items(), row):
-            data_to_fill[field_name] = fill_text
+            if field_name == "Fecha":
+                date_splited = fill_text.split("-")
+                data_to_fill[
+                    field_name
+                ] = f"and the seal of the university are affixed here. Given at Florida, U.S.A. on Month {date_splited[1]}, of {date_splited[0]}."
+            else:
+                data_to_fill[field_name] = fill_text
 
         for page in writer.pages:
             writer.update_page_form_field_values(page, data_to_fill, flags=1)
@@ -132,7 +131,7 @@ def main():
                     if "/T" in obj:
                         obj.update({NameObject("/Ff"): NumberObject(1)})
 
-        full_path = Path(".") / "output" / f"{row[args.file_name_column]}.pdf"
+        full_path = Path(".") / "output" / f"{row[0]}.pdf"
         full_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(full_path, "wb") as f:

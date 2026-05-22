@@ -1,5 +1,5 @@
 # Fill Docs
-Program to fill pdf fields from csv file
+Program to fill pdf fields from an Excel file.
 
 ## Demo
 ![Demo video of fill_docs](../assets/fill-docs-demo.gif)
